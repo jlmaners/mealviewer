@@ -104,22 +104,41 @@ class mealviewerSensor(Entity):
    
                     r = requests.get(url)
                     menus = r.json().get('menuSchedules')[0].get('menuBlocks')
-        
                     
                     if not menus:
                         meal = ''
                     else:
-                        lunch_menu = menus[0]
-                    
-                        meal = tomorrow.format('dddd')
-                        counter = 0
-                        for datas in lunch_menu.get('cafeteriaLineList').get('data')[0]['foodItemList']['data']:
-                            counter = counter + 1
-                            entree = datas['item_Name']
-                            if counter == 1:
-                                meal = meal + ': ' + entree
+                        for index, item in enumerate(menus):
+                            if item['blockName'] == 'Lunch':
+                                lunch_menu = item
                             else:
-                                meal = meal + ', ' + entree
+                                lunch_menu = None
+                        if not lunch_menu:
+                            meal = ''
+                        else:
+                            meal = tomorrow.format('dddd')
+                            counter = 0
+                            for datas in lunch_menu.get('cafeteriaLineList').get('data')[0]['foodItemList']['data']:
+                                counter = counter + 1
+                                entree = datas['item_Name']
+                                allergySafe = True
+                                allergens = ''
+                                for allergen in datas['allergens']:
+                                    if allergen['name'] in ("Eggs", "Peanuts"):
+                                        if allergySafe == True:
+                                            allergens = "Allergy Alert: " + allergen['name']
+                                            allergySafe = False
+                                        else:
+                                            allergens = allergens + ", " + allergen['name'] 
+
+                                if counter == 1:
+                                    meal = meal + ': ' + entree
+                                    if allergySafe == False:
+                                        meal = meal + '(' + allergens + ')'
+                                else:
+                                    meal = meal + ', ' + entree
+                                    if allergySafe == False:
+                                        meal = meal + '(' + allergens + ')'
                 
                 if day == 0:
                     self._lunch0 = meal
